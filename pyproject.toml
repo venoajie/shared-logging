@@ -1,7 +1,4 @@
 # pyproject.toml
-#
-# This file serves as the central configuration for the Python project,
-# using the setuptools build backend.
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -19,12 +16,11 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Proprietary" }
 classifiers = [
-    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
-    "Operating System :: OS Independent",
 ]
 dependencies = [
     "loguru>=0.7.0",
+    "orjson==3.11.4"
 ]
 
 [project.urls]
