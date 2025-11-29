@@ -1,14 +1,16 @@
 # src\shared_logging\config.py
 import sys
+
 import orjson
 from loguru import logger
+
 
 def configure_logger(service_name: str, environment: str):
     """
     Configures the Loguru logger for standardized, structured JSON output.
     This should be called once at the very start of a service's main() function.
     """
-    logger.remove() # Remove the default handler
+    logger.remove()  # Remove the default handler
 
     def serialize(record):
         """Custom serializer to format log records as JSON."""
@@ -34,6 +36,6 @@ def configure_logger(service_name: str, environment: str):
         sys.stdout,
         format=formatter,
         level="INFO",
-        serialize=False # We handle serialization manually in the formatter
+        serialize=False,  # We handle serialization manually in the formatter
     )
     logger.info(f"Structured JSON logger configured for '{service_name}'.")
