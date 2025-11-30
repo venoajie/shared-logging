@@ -1,9 +1,9 @@
 # src\shared_logging\config.py
 import sys
+import os
 
 import orjson
 from loguru import logger
-
 
 def configure_logger(service_name: str, environment: str):
     """
@@ -12,6 +12,23 @@ def configure_logger(service_name: str, environment: str):
     """
     logger.remove()  # Remove the default handler
 
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    
+    # Let Loguru handle the JSON serialization directly. This is safer and simpler.
+    logger.add(
+        sys.stdout,
+        level=log_level,
+        format="{message}", # The message will be a JSON string
+        serialize=True,
+        backtrace=True,
+        diagnose=True,
+    )
+
+    # Bind the service context to all subsequent log messages
+    logger.configure(extra={"service": service_name, "environment": environment})
+    
+    logger.info(f"Structured JSON logger configured for '{service_name}'.")
+    
     def serialize(record):
         """Custom serializer to format log records as JSON."""
         subset = {
