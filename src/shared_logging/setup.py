@@ -1,8 +1,10 @@
 # src\shared_logging\config.py
 
-import sys
 import os
+import sys
+
 from loguru import logger
+
 
 def configure_logger(service_name: str, environment: str):
     """
@@ -12,7 +14,7 @@ def configure_logger(service_name: str, environment: str):
     logger.remove()  # Remove any default or pre-existing handlers
 
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    
+
     # Configure a single, correct handler that uses Loguru's native JSON serialization.
     # This configuration is efficient and avoids the cause of the KeyError.
     logger.add(
@@ -26,5 +28,5 @@ def configure_logger(service_name: str, environment: str):
 
     # Bind the service context to all subsequent log messages.
     logger.configure(extra={"service": service_name, "environment": environment})
-    
+
     logger.info(f"Structured JSON logger configured for '{service_name}'.")
