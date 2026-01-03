@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shared-logging"
-version = "0.1.5"
+version = "0.2.0"
 authors = [
     { name = "Trading Systems Team", email = "ven.ajie@protonmail.com" },
 ]
@@ -37,32 +37,15 @@ where = ["src"]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
+    "pytest-mock>=3.12.0",
+    "pytest-asyncio>=0.23.0",
     "ruff>=0.4",
-    "python-semantic-release>=9.0",
     "build>=1.0",
 ]
 
-# --- Tool Configurations ---
-
-# Configuration for python-semantic-release.
-[tool.semantic_release]
-# The location of the version string to be updated.
-version_toml = "pyproject.toml:project.version"
-# Specifies the command to build the distributable package files.
-build_command = "python -m build"
-# Enforce conventional commit message standards.
-commit_parser = "angular"
-# Automatically generate release notes in CHANGELOG.md.
-changelog_file = "CHANGELOG.md"
-# Defines which repository provider to use for creating releases (e.g., GitHub).
-repository = "github"
-# Defines the branch from which releases are made.
-branch = "main"
-
 # Configuration for the Ruff linter and formatter.
 [tool.ruff]
-line-length = 88
-# Assumes the source code is in a `src` directory.
+line-length = 150
 src = ["src"]
 
 [tool.ruff.lint]
@@ -84,11 +67,9 @@ line-ending = "lf"
 
 # Configuration for Pytest.
 [tool.pytest.ini_options]
-# Add command line options here.
-# --cov specifies the module to measure coverage on.
-# --cov-report generates a terminal report.
+# pythonpath: critical for 'src' layout to allow 'import trading_shared'
+pythonpath = ["src"]
 addopts = "--cov=src --cov-report=term-missing"
-testpaths = [
-    "tests",
-]
-
+testpaths = ["tests"]
+# asyncio_mode: auto-detects async tests
+asyncio_mode = "auto"
