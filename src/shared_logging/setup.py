@@ -7,12 +7,31 @@ import orjson
 from loguru import logger
 
 
-def _orjson_serializer(record):
+def json_formatter(record: dict) -> str:
     """
-    Custom serializer using orjson for high-performance JSON logging.
-    This replaces Loguru's default serializer.
+    Formats a log record into a standardized, orjson-serialized JSON string.
+
+    Args:
+        record: The Loguru record dictionary.
+
+    Returns:
+        A JSON string representation of the log record, terminated with a newline.
     """
-    return orjson.dumps(record["extra"]).decode("utf-8")
+    log_object = {
+        "timestamp": record["time"].isoformat(),
+        "level": record["level"].name,
+        "message": record["message"],
+        "extra": record["extra"],
+    }
+    # Cleanly merge the 'extra' dictionary into the top-level log object
+    log_object.update(record["extra"])
+    del log_object["extra"]  # Remove the redundant 'extra' key
+
+    # Append exception details if they exist
+    if record["exception"]:
+        log_object["exception"] = str(record["exception"])
+
+    return orjson.dumps(log_object).decode("utf-8") + "\n"
 
 
 def configure_logger(service_name: str, environment: str):
@@ -22,44 +41,25 @@ def configure_logger(service_name: str, environment: str):
 
     This MUST be called once at the start of any service's main() function.
     """
-    logger.remove()  # Remove any default or pre-existing handlers
+    logger.remove()
 
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     is_development = environment.lower() == "development"
 
     # Core Configuration:
-    # - sink: sys.stdout is the container standard for log collection.
-    # - level: The minimum log level to process.
-    # - format: "{message}" defers all formatting to the JSON serializer.
-    # - serialize=True: Enables structured JSON logging.
-    # - enqueue=True: CRITICAL. Moves logging to a background thread,
-    #   decoupling application performance from I/O latency.
-    # - backtrace/diagnose: Disabled in production to prevent performance hits.
+    # - format: A custom function for full control over serialization.
+    # - enqueue=True: CRITICAL. Moves logging to a background thread.
+    # - backtrace/diagnose: Disabled in production for performance.
     logger.add(
         sys.stdout,
         level=log_level,
-        format="{message}",
-        serialize=True,
-        enqueue=True,  # Decouples application I/O from logging I/O.
-        backtrace=is_development,  # Production safety.
-        diagnose=is_development,  # Production safety.
+        format=json_formatter,
+        enqueue=True,
+        backtrace=is_development,
+        diagnose=is_development,
     )
 
     # Bind the service context to all subsequent log messages.
-    # This enriches every log entry with critical metadata for filtering.
-    logger.configure(
-        extra={"service": service_name, "environment": environment},
-        patcher=lambda record: record.update(
-            # Use orjson for serialization for performance gains.
-            message=orjson.dumps(
-                {
-                    "timestamp": record["time"].isoformat(),
-                    "level": record["level"].name,
-                    "message": record["message"],
-                    **record["extra"],
-                }
-            ).decode("utf-8")
-        ),
-    )
+    logger.configure(extra={"service": service_name, "environment": environment})
 
     logger.info(f"Asynchronous, structured JSON logger configured for '{service_name}'.")
