@@ -1,3 +1,4 @@
+
 # src/shared_logging/setup.py
 
 import os
@@ -7,31 +8,26 @@ import orjson
 from loguru import logger
 
 
-def json_formatter(record: dict) -> str:
+def _json_patcher(record: dict) -> dict:
     """
-    Formats a log record into a standardized, orjson-serialized JSON string.
-
-    Args:
-        record: The Loguru record dictionary.
-
-    Returns:
-        A JSON string representation of the log record, terminated with a newline.
+    A Loguru patcher that transforms the log record's message into a
+    structured JSON string. It flattens the 'extra' dictionary into the
+    top level of the JSON payload.
     """
-    log_object = {
+    # Start with the basic log structure
+    log_json = {
         "timestamp": record["time"].isoformat(),
         "level": record["level"].name,
         "message": record["message"],
-        "extra": record["extra"],
     }
-    # Cleanly merge the 'extra' dictionary into the top-level log object
-    log_object.update(record["extra"])
-    del log_object["extra"]  # Remove the redundant 'extra' key
+    # Merge the 'extra' dict (service, environment, bound context)
+    # into the top level of the JSON object.
+    log_json.update(record["extra"])
 
-    # Append exception details if they exist
-    if record["exception"]:
-        log_object["exception"] = str(record["exception"])
-
-    return orjson.dumps(log_object).decode("utf-8") + "\n"
+    # Serialize the entire object into a single JSON string and
+    # replace the original message with it.
+    record["message"] = orjson.dumps(log_json).decode("utf-8")
+    return record
 
 
 def configure_logger(service_name: str, environment: str):
@@ -41,25 +37,27 @@ def configure_logger(service_name: str, environment: str):
 
     This MUST be called once at the start of any service's main() function.
     """
-    logger.remove()
+    logger.remove()  # Remove any default or pre-existing handlers
 
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     is_development = environment.lower() == "development"
 
-    # Core Configuration:
-    # - format: A custom function for full control over serialization.
-    # - enqueue=True: CRITICAL. Moves logging to a background thread.
-    # - backtrace/diagnose: Disabled in production for performance.
+    # 1. Configure the patcher to run for all loggers.
+    # This transforms the record's data before it reaches any sink.
+    logger.configure(
+        extra={"service": service_name, "environment": environment},
+        patcher=_json_patcher,
+    )
+
+    # 2. Add the sink.
+    # Its only job is to print the (now JSON-formatted) message.
     logger.add(
         sys.stdout,
         level=log_level,
-        format=json_formatter,
+        format="{message}",  # The message is now a JSON string.
         enqueue=True,
         backtrace=is_development,
         diagnose=is_development,
     )
-
-    # Bind the service context to all subsequent log messages.
-    logger.configure(extra={"service": service_name, "environment": environment})
 
     logger.info(f"Asynchronous, structured JSON logger configured for '{service_name}'.")
