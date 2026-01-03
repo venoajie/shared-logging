@@ -1,4 +1,3 @@
-
 # src/shared_logging/setup.py
 
 import os

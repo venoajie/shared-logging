@@ -1,4 +1,3 @@
-
 # tests/test_config.py
 
 import io
@@ -37,7 +36,7 @@ def test_logger_is_correctly_configured(mocker):
         ("production", False, False),
         ("staging", False, False),
         ("development", True, True),
-        ("DEVELOPMENT", True, True), # Test case-insensitivity
+        ("DEVELOPMENT", True, True),  # Test case-insensitivity
     ],
 )
 def test_production_safety_modes(mocker, environment, expected_backtrace, expected_diagnose):
@@ -86,7 +85,7 @@ def test_output_is_valid_nested_orjson():
         # that was just configured.
         log = logger.bind(request_id="abc-123")
         log.warning(log_message)
-        logger.complete() # Wait for the async queue to be processed
+        logger.complete()  # Wait for the async queue to be processed
         output = sink.getvalue()
     finally:
         # IMPORTANT: Restore stdout to its original state
@@ -116,5 +115,5 @@ def test_output_is_valid_nested_orjson():
     assert parsed_inner.get("message") == log_message
     assert parsed_inner.get("service") == test_service
     assert parsed_inner.get("environment") == test_env
-    assert parsed_inner.get("request_id") == "abc-123" # Verify context binding
+    assert parsed_inner.get("request_id") == "abc-123"  # Verify context binding
     assert "timestamp" in parsed_inner, "Timestamp must be present in the log"
