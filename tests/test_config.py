@@ -1,4 +1,3 @@
-
 # tests/test_config.py
 
 import io
@@ -82,7 +81,7 @@ def test_output_is_valid_json_and_contains_correct_data():
 
     assert output, "Logger did not produce any output"
 
-    log_lines = [line for line in output.strip().split('\n') if line]
+    log_lines = [line for line in output.strip().split("\n") if line]
     assert len(log_lines) >= 2, "Expected at least two log entries"
 
     last_log_line = log_lines[-1]
